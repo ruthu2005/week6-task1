@@ -1,0 +1,355 @@
+{
+  "info": {
+    "name": "JWT User Authentication API",
+    "_postman_id": "b1a2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "description": "Comprehensive Postman test collection for Express + JWT Authentication API including User Registration, Bcrypt Hashing, Login, Token Issuance, and Token Verification Middleware.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "health"]
+        },
+        "description": "Verifies server connectivity and health probe."
+      },
+      "response": []
+    },
+    {
+      "name": "2. Register New User",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('Response contains token and sanitized user', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData).to.have.property('token');",
+              "    pm.expect(jsonData.user).to.not.have.property('password');",
+              "    pm.collectionVariables.set('authToken', jsonData.token);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Ruthu Student\",\n  \"email\": \"ruthu.student@example.com\",\n  \"password\": \"SecurePass2026!\",\n  \"role\": \"student\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/users/register",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "users", "register"]
+        },
+        "description": "Registers a new user, hashes password with bcrypt, stores user, and returns signed JWT."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Register Duplicate User (Conflict)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 409 Conflict', function () {",
+              "    pm.response.to.have.status(409);",
+              "});",
+              "",
+              "pm.test('Error message identifies existing registration', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(false);",
+              "    pm.expect(jsonData.message).to.include('already registered');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Ruthu Student\",\n  \"email\": \"ruthu.student@example.com\",\n  \"password\": \"SecurePass2026!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/users/register",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "users", "register"]
+        },
+        "description": "Attempts duplicate registration with the same email, asserting 409 Conflict."
+      },
+      "response": []
+    },
+    {
+      "name": "4. Login User",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Returns valid JWT token and sets environment variable', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData).to.have.property('token');",
+              "    pm.collectionVariables.set('authToken', jsonData.token);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"ruthu.student@example.com\",\n  \"password\": \"SecurePass2026!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/users/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "users", "login"]
+        },
+        "description": "Authenticates user credentials and issues a signed JWT token."
+      },
+      "response": []
+    },
+    {
+      "name": "5. Login With Invalid Password",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 401 Unauthorized', function () {",
+              "    pm.response.to.have.status(401);",
+              "});",
+              "",
+              "pm.test('Rejects invalid credentials securely', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(false);",
+              "    pm.expect(jsonData.message).to.include('Invalid email or password');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"ruthu.student@example.com\",\n  \"password\": \"WrongPassword!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/users/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "users", "login"]
+        },
+        "description": "Tests credential verification failure with bad password."
+      },
+      "response": []
+    },
+    {
+      "name": "6. Verify Token (Protected)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Token is confirmed valid and returns decoded claims', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.user.email).to.eql('ruthu.student@example.com');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/users/verify",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "users", "verify"]
+        },
+        "description": "Validates active token using verifyToken middleware and returns authenticated user claims."
+      },
+      "response": []
+    },
+    {
+      "name": "7. Get User Profile (Protected)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Returns user profile sanitized without password', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.user).to.have.property('name');",
+              "    pm.expect(jsonData.user).to.not.have.property('password');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/users/profile",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "users", "profile"]
+        },
+        "description": "Retrieves the authenticated user profile from protected endpoint."
+      },
+      "response": []
+    },
+    {
+      "name": "8. Access Without Token (Unauthorized - 401)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 401 Unauthorized', function () {",
+              "    pm.response.to.have.status(401);",
+              "});",
+              "",
+              "pm.test('Error indicates MissingToken', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(false);",
+              "    pm.expect(jsonData.error).to.eql('MissingToken');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/users/profile",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "users", "profile"]
+        },
+        "description": "Tests access control when no Authorization header is provided."
+      },
+      "response": []
+    },
+    {
+      "name": "9. Access With Invalid Token (Forbidden - 403)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 403 Forbidden', function () {",
+              "    pm.response.to.have.status(403);",
+              "});",
+              "",
+              "pm.test('Error indicates InvalidToken', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(false);",
+              "    pm.expect(jsonData.error).to.eql('InvalidToken');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer this_is_a_completely_invalid_and_tampered_jwt_token_12345"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/users/profile",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "users", "profile"]
+        },
+        "description": "Tests rejection of forged or tampered JWT signatures."
+      },
+      "response": []
+    }
+  ]
+}
